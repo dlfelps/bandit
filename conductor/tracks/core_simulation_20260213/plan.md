@@ -23,5 +23,5 @@
 
 ## Phase 4: Integration & Initial Comparison
 - [x] Task: Run a simulation with both `RandomChoice` and `EpsilonGreedy` on a data subset. `7f15c88`
-- [ ] Task: Implement basic metric logging and verify CSV output.
+- [x] Task: Implement basic metric logging and verify CSV output. `4772bb9`
 - [ ] Task: Conductor - User Manual Verification 'Phase 4: Integration & Initial Comparison' (Protocol in workflow.md)
