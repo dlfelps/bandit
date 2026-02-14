@@ -6,8 +6,8 @@
 - [ ] Task: Conductor - User Manual Verification 'Phase 1: Environment & Foundational Interfaces' (Protocol in workflow.md)
 
 ## Phase 2: Data Pipeline & Simulation Engine
-- [ ] Task: Implement the `MINDDataLoader` to parse the MIND dataset impressions and news metadata.
-- [ ] Task: Create the `SimulationEngine` to coordinate the flow between data and algorithms.
+- [x] Task: Implement the `MINDDataLoader` to parse the MIND dataset impressions and news metadata. `133f0ab`
+- [~] Task: Create the `SimulationEngine` to coordinate the flow between data and algorithms.
     - [ ] Write unit tests for the simulation loop logic.
     - [ ] Implement the core `run()` method.
 - [ ] Task: Conductor - User Manual Verification 'Phase 2: Data Pipeline & Simulation Engine' (Protocol in workflow.md)
