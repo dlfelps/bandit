@@ -7,9 +7,9 @@
 
 ## Phase 2: Data Pipeline & Simulation Engine
 - [x] Task: Implement the `MINDDataLoader` to parse the MIND dataset impressions and news metadata. `133f0ab`
-- [~] Task: Create the `SimulationEngine` to coordinate the flow between data and algorithms.
-    - [ ] Write unit tests for the simulation loop logic.
-    - [ ] Implement the core `run()` method.
+- [x] Task: Create the `SimulationEngine` to coordinate the flow between data and algorithms. `7a3994c`
+    - [x] Write unit tests for the simulation loop logic.
+    - [x] Implement the core `run()` method.
 - [ ] Task: Conductor - User Manual Verification 'Phase 2: Data Pipeline & Simulation Engine' (Protocol in workflow.md)
 
 ## Phase 3: Baseline Algorithm Implementation
