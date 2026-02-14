@@ -1,0 +1,8 @@
+{
+  "track_id": "core_simulation_20260213",
+  "type": "feature",
+  "status": "new",
+  "created_at": "2026-02-13T19:55:00Z",
+  "updated_at": "2026-02-13T19:55:00Z",
+  "description": "Build the core simulation framework and implement the baseline bandit algorithms (Random and Epsilon-Greedy)."
+}
