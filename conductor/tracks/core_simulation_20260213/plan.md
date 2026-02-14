@@ -22,6 +22,6 @@
 - [x] Task: Conductor - User Manual Verification 'Phase 3: Baseline Algorithm Implementation' (Protocol in workflow.md) ✓
 
 ## Phase 4: Integration & Initial Comparison
-- [ ] Task: Run a simulation with both `RandomChoice` and `EpsilonGreedy` on a data subset.
+- [x] Task: Run a simulation with both `RandomChoice` and `EpsilonGreedy` on a data subset. `7f15c88`
 - [ ] Task: Implement basic metric logging and verify CSV output.
 - [ ] Task: Conductor - User Manual Verification 'Phase 4: Integration & Initial Comparison' (Protocol in workflow.md)
