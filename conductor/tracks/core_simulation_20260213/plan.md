@@ -2,7 +2,7 @@
 
 ## Phase 1: Environment & Foundational Interfaces
 - [x] Task: Set up the Python environment using `uv` and install core dependencies (NumPy, Pandas, Pytest). `f60dba5`
-- [ ] Task: Define the `BanditAlgorithm` abstract base class with `select_arm` and `update` methods.
+- [x] Task: Define the `BanditAlgorithm` abstract base class with `select_arm` and `update` methods. `ae4286a`
 - [ ] Task: Conductor - User Manual Verification 'Phase 1: Environment & Foundational Interfaces' (Protocol in workflow.md)
 
 ## Phase 2: Data Pipeline & Simulation Engine
