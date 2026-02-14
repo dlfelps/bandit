@@ -21,7 +21,11 @@ htmlcov/
 .pytest_cache/
 
 # Data (large files - regenerate with scripts/generate_sample_data.py)
+<<<<<<< HEAD
 /data/output
+=======
+/data/
+>>>>>>> 8623b588132fa5f3806eb817d6a2511f0aec7180
 
 # OS
 .DS_Store
