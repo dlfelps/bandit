@@ -20,8 +20,8 @@ build/
 htmlcov/
 .pytest_cache/
 
-# Data (large files - regenerate with scripts/generate_sample_data.py)
-/data/
+# Data (large output files)
+/data/output/
 
 # OS
 .DS_Store
