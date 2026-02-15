@@ -12,16 +12,16 @@
     - [x] Implement the core `run()` method.
 - [x] Task: Conductor - User Manual Verification 'Phase 2: Data Pipeline & Simulation Engine' (Protocol in workflow.md) ✓
 
-## Phase 3: Baseline Algorithm Implementation
+## Phase 3: Baseline Algorithm Implementation [checkpoint: 5c0417a]
 - [x] Task: Implement the `RandomChoice` algorithm. `8634531`
     - [x] Write unit tests for `RandomChoice`.
     - [x] Implement `select_arm` logic.
 - [x] Task: Implement the `EpsilonGreedy` algorithm. `9d966b7`
     - [x] Write unit tests for `EpsilonGreedy`.
     - [x] Implement exploration/exploitation logic.
-- [ ] Task: Conductor - User Manual Verification 'Phase 3: Baseline Algorithm Implementation' (Protocol in workflow.md)
+- [x] Task: Conductor - User Manual Verification 'Phase 3: Baseline Algorithm Implementation' (Protocol in workflow.md) ✓
 
-## Phase 4: Integration & Initial Comparison
-- [ ] Task: Run a simulation with both `RandomChoice` and `EpsilonGreedy` on a data subset.
-- [ ] Task: Implement basic metric logging and verify CSV output.
-- [ ] Task: Conductor - User Manual Verification 'Phase 4: Integration & Initial Comparison' (Protocol in workflow.md)
+## Phase 4: Integration & Initial Comparison [checkpoint: 422d494]
+- [x] Task: Run a simulation with both `RandomChoice` and `EpsilonGreedy` on a data subset. `7f15c88`
+- [x] Task: Implement basic metric logging and verify CSV output. `4772bb9`
+- [x] Task: Conductor - User Manual Verification 'Phase 4: Integration & Initial Comparison' (Protocol in workflow.md) ✓
