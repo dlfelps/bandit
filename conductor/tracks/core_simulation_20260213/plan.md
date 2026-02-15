@@ -30,5 +30,5 @@
 - [x] Task: Implement the `ThompsonSampling` algorithm using Beta-Bernoulli conjugate model. `042c5cf`
     - [x] Write unit tests for `ThompsonSampling`.
     - [x] Implement Beta posterior sampling and update logic.
-- [ ] Task: Add `ThompsonSampling` to the comparison script and verify results.
+- [x] Task: Add `ThompsonSampling` to the comparison script and verify results. `c98e6e6`
 - [ ] Task: Conductor - User Manual Verification 'Phase 5: Thompson Sampling Algorithm' (Protocol in workflow.md)
