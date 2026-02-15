@@ -79,11 +79,19 @@ class SimulationEngine:
             candidates = impression["candidates"]
             rewards = impression["rewards"]
             user_id = impression["user_id"]
+            contexts = impression.get("contexts")
 
-            selected_arm = self._algorithm.select_arm(candidates)
+            selected_arm = self._algorithm.select_arm(
+                candidates, context=contexts
+            )
             reward = rewards[selected_arm]
 
-            self._algorithm.update(selected_arm, reward)
+            arm_context = (
+                contexts[selected_arm] if contexts else None
+            )
+            self._algorithm.update(
+                selected_arm, reward, context=arm_context
+            )
 
             total_impressions += 1
             total_clicks += int(reward)
