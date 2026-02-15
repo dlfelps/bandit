@@ -1,14 +1,15 @@
 """Run a head-to-head comparison of bandit algorithms on MIND data.
 
-Runs both RandomChoice and EpsilonGreedy against the MINDsmall_dev
-dataset, prints summary metrics to the console, and saves results
-to CSV files in the output directory.
+Runs RandomChoice, EpsilonGreedy, and ThompsonSampling against the
+MINDsmall_dev dataset, prints summary metrics to the console, and
+saves results to CSV files in the output directory.
 """
 
 from pathlib import Path
 
 from bandit.algorithms.epsilon_greedy import EpsilonGreedy
 from bandit.algorithms.random_choice import RandomChoice
+from bandit.algorithms.thompson_sampling import ThompsonSampling
 from bandit.data.loader import MINDDataLoader
 from bandit.metrics.csv_logger import save_results
 from bandit.simulation.comparison import compare_algorithms
@@ -28,6 +29,7 @@ def main() -> None:
     algorithms = [
         RandomChoice(seed=42),
         EpsilonGreedy(epsilon=0.1, seed=42),
+        ThompsonSampling(seed=42),
     ]
 
     print("Running comparison...")
