@@ -33,14 +33,30 @@ class ThompsonSampling(BanditAlgorithm):
     Bayesian approach to the exploration/exploitation trade-off.
 
     Args:
+        prior_alpha: Alpha parameter for the Beta prior on each arm.
+        prior_beta: Beta parameter for the Beta prior on each arm.
+            The default Beta(1, 1) is a uniform prior.  When the
+            arm space is large relative to the number of rounds a
+            tighter prior (e.g. Beta(1, 8)) can help the algorithm
+            exploit observed clicks sooner.
         seed: Optional RNG seed for reproducibility.
     """
 
-    def __init__(self, seed: int | None = None) -> None:
+    def __init__(
+        self,
+        prior_alpha: float = 1.0,
+        prior_beta: float = 1.0,
+        seed: int | None = None,
+    ) -> None:
+        self._prior_alpha = prior_alpha
+        self._prior_beta = prior_beta
         self._rng = np.random.default_rng(seed)
-        # Beta posterior parameters: default prior is Beta(1, 1)
-        self._alpha: dict[str, float] = defaultdict(lambda: 1.0)
-        self._beta: dict[str, float] = defaultdict(lambda: 1.0)
+        self._alpha: dict[str, float] = defaultdict(
+            lambda: self._prior_alpha
+        )
+        self._beta: dict[str, float] = defaultdict(
+            lambda: self._prior_beta
+        )
 
     def select_arm(
         self,

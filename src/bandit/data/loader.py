@@ -18,6 +18,7 @@ MIND dataset schema:
 from pathlib import Path
 from typing import Any
 
+import numpy as np
 import pandas as pd
 
 # Column names for the MIND dataset TSV files (no headers in the files)
@@ -84,12 +85,18 @@ class MINDDataLoader:
             )
 
         self._news = self._load_news(news_path)
+        self._article_features = self._build_article_features()
         self._impressions = self._parse_behaviors(behaviors_path)
 
     @property
     def news(self) -> pd.DataFrame:
         """Return the news article metadata DataFrame."""
         return self._news
+
+    @property
+    def article_features(self) -> dict[str, np.ndarray]:
+        """Return per-article one-hot category feature vectors."""
+        return self._article_features
 
     @property
     def impressions(self) -> list[dict[str, Any]]:
@@ -112,6 +119,58 @@ class MINDDataLoader:
             header=None,
             names=_NEWS_COLUMNS,
         )
+
+    def _build_article_features(self) -> dict[str, np.ndarray]:
+        """Build one-hot category feature vectors for each article.
+
+        Returns:
+            Dict mapping article_id to a numpy array of shape
+            (num_categories,) with a 1.0 at the category index.
+        """
+        self._categories = sorted(self._news["category"].unique())
+        self._cat_to_idx = {
+            cat: i for i, cat in enumerate(self._categories)
+        }
+        d = len(self._categories)
+
+        features: dict[str, np.ndarray] = {}
+        for _, row in self._news.iterrows():
+            vec = np.zeros(d)
+            vec[self._cat_to_idx[row["category"]]] = 1.0
+            features[row["article_id"]] = vec
+        return features
+
+    def _build_user_profile(
+        self, click_history: str
+    ) -> np.ndarray:
+        """Build a user profile vector from their click history.
+
+        Computes a normalised category-frequency vector over the
+        articles the user has previously clicked.  If the history is
+        empty or contains no known articles the result is a zero
+        vector.
+
+        Args:
+            click_history: Space-separated article IDs the user
+                clicked before this impression.
+
+        Returns:
+            Array of shape (num_categories,) with values in [0, 1].
+        """
+        d = len(self._categories)
+        profile = np.zeros(d)
+
+        if not isinstance(click_history, str) or not click_history.strip():
+            return profile
+
+        for aid in click_history.split():
+            if aid in self._article_features:
+                profile += self._article_features[aid]
+
+        total = profile.sum()
+        if total > 0:
+            profile /= total
+        return profile
 
     def _parse_behaviors(self, path: Path) -> list[dict[str, Any]]:
         """Parse behaviors.tsv into a list of impression round dicts.
@@ -143,11 +202,23 @@ class MINDDataLoader:
                 candidates.append(article_id)
                 rewards[article_id] = float(label)
 
+            user_profile = self._build_user_profile(
+                row["click_history"]
+            )
+            contexts = {}
+            for aid in candidates:
+                if aid in self._article_features:
+                    article_vec = self._article_features[aid]
+                    contexts[aid] = np.concatenate(
+                        [user_profile, article_vec]
+                    )
+
             rounds.append(
                 {
                     "user_id": str(row["user_id"]),
                     "candidates": candidates,
                     "rewards": rewards,
+                    "contexts": contexts,
                 }
             )
 
