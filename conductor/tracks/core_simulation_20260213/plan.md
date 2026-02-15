@@ -25,3 +25,10 @@
 - [x] Task: Run a simulation with both `RandomChoice` and `EpsilonGreedy` on a data subset. `7f15c88`
 - [x] Task: Implement basic metric logging and verify CSV output. `4772bb9`
 - [x] Task: Conductor - User Manual Verification 'Phase 4: Integration & Initial Comparison' (Protocol in workflow.md) ✓
+
+## Phase 5: Thompson Sampling Algorithm [checkpoint: 9f95da3]
+- [x] Task: Implement the `ThompsonSampling` algorithm using Beta-Bernoulli conjugate model. `042c5cf`
+    - [x] Write unit tests for `ThompsonSampling`.
+    - [x] Implement Beta posterior sampling and update logic.
+- [x] Task: Add `ThompsonSampling` to the comparison script and verify results. `c98e6e6`
+- [x] Task: Conductor - User Manual Verification 'Phase 5: Thompson Sampling Algorithm' (Protocol in workflow.md) ✓
