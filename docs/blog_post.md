@@ -24,7 +24,7 @@ The simplest possible strategy: pick an article uniformly at random with no rega
 
 **Strengths:** Dead simple and completely unbiased. It makes no assumptions and requires no tuning. Its only purpose is to establish a performance floor — any useful algorithm must beat this.
 
-**Weaknesses:** It ignores everything. Every click it gets is pure luck. With ~6.6 candidates per round, we'd expect a CTR around 15%, which is exactly what it delivers.
+**Weaknesses:** It ignores everything. Every click it gets is pure luck. With ~37 candidates per round, we'd expect a CTR around 3%, but since some articles are more popular than others the actual random CTR lands around 11%.
 
 ### Epsilon-Greedy
 
@@ -40,9 +40,9 @@ Thompson Sampling takes a Bayesian approach to the explore/exploit problem. Inst
 
 **Strengths:** Exploration is principled and automatic. Articles that the algorithm is uncertain about have wide distributions — their samples sometimes come out high, naturally triggering exploration. Articles with strong evidence of high click rates have narrow distributions centered on good values, so they consistently win. There is no exploration parameter to tune. As confidence grows, exploration naturally tapers off.
 
-**Weaknesses:** Like epsilon-greedy, Thompson Sampling is context-free. It cannot personalize. More subtly, it is sensitive to the choice of prior distribution in sparse settings. With 200 articles and only 500 impression rounds, each article gets pulled just 2-3 times on average. A uniform prior — Beta(1,1), expressing total ignorance — means the posterior is barely different from the prior after so few observations. Thompson Sampling effectively degrades to random selection.
+**Weaknesses:** Like epsilon-greedy, Thompson Sampling is context-free. It cannot personalize. It is also sensitive to the choice of prior distribution. With over 18,000 unique articles appearing across 100,000 impressions, many articles are seen only a handful of times. A uniform prior — Beta(1,1), expressing total ignorance — can slow down learning when the arm space is large. A pessimistic prior calibrated to the base click rate helps the algorithm exploit observed clicks sooner.
 
-**Key insight:** We solved this by using a pessimistic prior of Beta(1,8), which encodes a prior belief that articles are clicked about 11% of the time (close to the actual base rate). With this prior, even a single click on an article meaningfully shifts its posterior upward, allowing the algorithm to exploit that signal. Prior tuning is a practical consideration that textbooks often gloss over, but it makes or breaks Thompson Sampling in real-world sparse settings.
+**Key insight:** We use a prior of Beta(1,8), which encodes a prior belief that articles are clicked about 11% of the time (close to the actual base rate). This lets even a single click on an article meaningfully shift its posterior upward. Prior tuning is a practical consideration that textbooks often gloss over, but it matters in real-world settings with large article catalogs.
 
 ### LinUCB (Contextual Bandit)
 
@@ -50,29 +50,29 @@ LinUCB, introduced by Li et al. at WWW 2010, is a contextual bandit algorithm. U
 
 At decision time, LinUCB computes a predicted reward for each candidate *plus* an "optimism bonus" that is large when the algorithm is uncertain about a prediction. It picks the article with the highest optimistic estimate. This is the Upper Confidence Bound (UCB) principle: be optimistic in the face of uncertainty, because the upside of discovering a great option outweighs the cost of a bad trial.
 
-The context vector we use is 20-dimensional: 10 dimensions for the **user profile** (a normalized distribution over news categories based on which articles the user has clicked in the past) and 10 dimensions for the **article category** (a one-hot encoding). This lets LinUCB learn patterns like "users who read sports articles tend to click on other sports articles."
+The context vector we use is 62-dimensional, built from subcategory information rather than the coarser top-level categories. The MIND dataset has 285 subcategories — far more granular than the 18 categories. We keep the top 30 most frequent subcategories (covering 84% of articles) plus an "other" bucket, giving a 31-dimensional one-hot per article. The first 31 dimensions encode the **user profile**: a normalized subcategory-frequency vector from the user's click history. A user who clicked mostly "football_nfl" and "basketball_nba" articles would have high weight on those subcategories. The remaining 31 dimensions encode the **article subcategory** as a one-hot. This lets LinUCB learn fine-grained patterns like "NFL fans tend to click NFL articles" rather than just "sports fans like sports."
 
 **Strengths:** LinUCB personalizes. Different users get different recommendations based on their reading history. It shares learning across contexts — a click on a sports article by a sports-oriented user informs predictions for similar user-article pairs, not just that specific article. And its exploration bonus shrinks automatically as confidence grows, so it explores less over time without requiring manual tuning.
 
 **Weaknesses:** LinUCB is only as good as the features you give it. The algorithm itself is elegant, but feature engineering is the real bottleneck.
 
-**Key insight:** With article-only features (a 10-dimensional category one-hot), LinUCB actually underperformed epsilon-greedy. It was learning "which categories get clicked globally" — something epsilon-greedy already captures by tracking per-article averages. Adding the user profile from click history was the critical change. The algorithm needs a user-article interaction signal to do what it was designed to do: personalize.
+**Key insight:** Feature granularity matters. With only 18 top-level categories, LinUCB was learning "which categories get clicked globally" — something epsilon-greedy already captures by tracking per-article averages. Switching to 285 subcategories (bucketed into top-30 + other) and adding user subcategory profiles from click history meaningfully improved LinUCB's performance. The algorithm needs fine-grained user-article interaction signals to personalize effectively.
 
 ## Experiment
 
 ### Dataset
 
-We evaluate on MINDsmall_dev, a development split from the Microsoft News Dataset (MIND). It contains 500 user impression rounds across 200 unique news articles spanning 10 categories: news, sports, entertainment, finance, lifestyle, health, autos, travel, food & drink, and weather. Each impression presents approximately 6.6 candidate articles on average, with ground-truth click labels indicating which article the user actually engaged with.
+We evaluate on MINDlarge_train, the large training split from the Microsoft News Dataset (MIND). The full dataset contains over 2.2 million impression logs and 101,527 news articles. We sample the first 100,000 impressions for our comparison, which covers 18,866 unique articles across 18 categories including news, sports, entertainment, finance, lifestyle, health, and more. Each impression presents approximately 37 candidate articles on average, with ground-truth click labels indicating which article the user actually engaged with.
 
 ### Simulation
 
 We replay impressions sequentially through a simulation engine. For each round, the algorithm sees the candidate articles (and, for LinUCB, the context vectors), selects one article to recommend, and then observes the ground-truth reward: 1.0 if the user clicked that article, 0.0 otherwise. The algorithm updates its internal state and moves to the next round.
 
-Critically, all four algorithms process the same 500 impressions in the same order. This ensures a fair apples-to-apples comparison — differences in CTR reflect algorithmic merit, not data ordering.
+Critically, all four algorithms process the same 100,000 impressions in the same order. This ensures a fair apples-to-apples comparison — differences in CTR reflect algorithmic merit, not data ordering.
 
 ### Context Construction
 
-For LinUCB, we construct a 20-dimensional context vector per candidate article in each round. The first 10 dimensions encode the **user profile**: a normalized category-frequency vector built from the articles the user has previously clicked. A user who clicked 3 sports articles and 1 finance article would have high weight on sports and low weight elsewhere. The remaining 10 dimensions encode the **article category** as a one-hot vector. This concatenated representation gives LinUCB the user-article interaction signal it needs for personalization.
+For LinUCB, we construct a 62-dimensional context vector per candidate article in each round. Rather than using the 18 top-level categories, we use subcategory information — the MIND dataset has 285 subcategories like "football_nfl", "newsus", and "lifestylebuzz". We keep the top 30 most frequent subcategories (covering 84% of articles) plus an "other" bucket, giving 31 dimensions. The first 31 dimensions encode the **user profile**: a normalized subcategory-frequency vector built from the articles the user has previously clicked. A user who clicked 3 NFL football and 1 NBA basketball article would have high weight on those specific subcategories. The remaining 31 dimensions encode the **article subcategory** as a one-hot vector. This concatenated representation gives LinUCB fine-grained user-article interaction signals for personalization.
 
 ### Metric
 
@@ -84,33 +84,33 @@ Our primary metric is click-through rate (CTR): total clicks divided by total im
 
 | Algorithm | CTR | vs. Random |
 |---|---|---|
-| RandomChoice | 0.1660 | — |
-| EpsilonGreedy | 0.1940 | +16.9% |
-| ThompsonSampling | 0.1940 | +16.9% |
-| LinUCB | 0.1960 | +18.1% |
+| RandomChoice | 0.1088 | — |
+| EpsilonGreedy | 0.1931 | +77.5% |
+| ThompsonSampling | 0.1821 | +67.4% |
+| LinUCB | 0.1789 | +64.4% |
 
 ![Final CTR comparison across all four algorithms](../results/final_ctr.png)
 
-All three learning algorithms meaningfully outperform the random baseline. LinUCB edges ahead as the top performer, though the margin over epsilon-greedy and Thompson Sampling is slim — just one additional click out of 500 impressions.
+All three learning algorithms substantially outperform the random baseline. Epsilon-greedy leads with a 77% relative improvement, followed by Thompson Sampling and LinUCB close behind. With 100,000 impressions, the differences between algorithms are clearly visible — EpsilonGreedy achieves 19,313 clicks compared to RandomChoice's 10,876, and LinUCB nearly matches Thompson Sampling at 17,893 clicks.
 
 ### Learning Curves
 
-![Cumulative CTR over 500 impression rounds](../results/cumulative_ctr.png)
+![Cumulative CTR over 100,000 impression rounds](../results/cumulative_ctr.png)
 
-The cumulative CTR plot reveals how each algorithm learns over time. The early rounds (1-50) are noisy due to small sample sizes. RandomChoice quickly converges to ~16.6% and stays flat — there is no learning happening. The three learning algorithms begin to separate from random after roughly 50-100 rounds as they accumulate enough feedback to start making informed decisions. LinUCB shows a slightly higher CTR through the middle of the run (rounds 100-300), consistent with its ability to leverage user context. By round 500, the learning algorithms cluster tightly between 19.4% and 19.6%.
+The cumulative CTR plot reveals how each algorithm learns over time. RandomChoice converges to ~10.9% and stays flat — there is no learning happening. EpsilonGreedy ramps up fastest, reaching near its final CTR by around 5,000 rounds. Thompson Sampling follows a similar trajectory but stabilizes slightly lower. LinUCB starts slower — its linear models need more data to learn the relationship between subcategory features and clicks — but steadily climbs throughout the entire run, closing the gap with Thompson Sampling by round 100,000 and still trending upward. All three learning algorithms clearly separate from the random baseline within the first few thousand rounds.
 
 ### Takeaways
 
-**1. Any learning beats no learning.** Even the simplest learning algorithm, epsilon-greedy, achieves a ~17% relative improvement over random. The explore/exploit framework delivers real value with minimal complexity.
+**1. Any learning beats no learning.** Even the simplest learning algorithm, epsilon-greedy, achieves a 77% relative improvement over random. With 100,000 impressions, that translates to over 8,400 additional clicks. The explore/exploit framework delivers real, measurable value.
 
-**2. Bayesian priors need tuning in sparse settings.** Thompson Sampling is mathematically elegant, but with 200 articles and only 500 rounds, the prior distribution matters enormously. A uniform prior made it indistinguishable from random. A pessimistic prior calibrated to the base click rate unlocked its potential. This is the kind of practical detail that separates textbook understanding from working implementations.
+**2. Simple algorithms are hard to beat.** Epsilon-greedy — the most straightforward learning approach — outperforms both Thompson Sampling and LinUCB on this dataset. Its fast exploitation of per-article averages is highly effective when the same articles recur across many impressions. Sophistication does not automatically mean better performance.
 
-**3. Context helps, but features are the bottleneck.** LinUCB's advantage did not come from the algorithm — it came from engineering the right features. Article-only features gave it nothing beyond what simpler algorithms already captured. Adding user preference profiles from click history was the critical unlock. The lesson generalizes: investing in feature engineering often pays more than switching to a fancier algorithm.
+**3. Bayesian priors matter.** Thompson Sampling performs well with a Beta(1,8) prior calibrated to the base click rate. Prior tuning is a practical consideration that textbooks often gloss over, but it matters in real-world settings with large article catalogs where many arms are sparsely observed.
 
-**4. Scale limits differentiation.** With 500 impressions, the learning algorithms are nearly indistinguishable. In production systems processing millions of interactions, the compounding effect of better per-impression decisions widens the gap significantly. This small-scale experiment is useful for understanding mechanics but should not be used to draw conclusions about which algorithm is "best" at scale.
+**4. Feature granularity unlocks contextual algorithms.** Switching from 18 top-level categories to the top-30 subcategories meaningfully improved LinUCB's performance. Subcategories like "football_nfl" and "basketball_nba" carry far more preference signal than a flat "sports" label. LinUCB's learning curve is still climbing at 100,000 rounds, suggesting that with more data — or even richer features like title embeddings — it could surpass the context-free approaches.
 
 **5. The framework matters more than any single result.** A clean algorithmic interface — select an arm, observe a reward, update — makes it trivial to swap in new approaches. The engineering investment in a modular simulation framework pays dividends long after any individual experiment.
 
 ### What's Next
 
-This comparison scratches the surface. Natural extensions include scaling to the full MIND dataset (160K+ impressions), enriching features with title embeddings and subcategory information, adding algorithms like UCB1 and contextual Thompson Sampling, and running statistical significance tests to quantify the reliability of observed differences.
+Natural extensions include enriching features with title embeddings for semantic similarity, running on the full 2.2 million impressions to see if LinUCB's upward trajectory overtakes the context-free algorithms, adding algorithms like UCB1 and contextual Thompson Sampling, and running statistical significance tests to quantify the reliability of observed differences.

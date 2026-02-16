@@ -59,12 +59,19 @@ class MINDDataLoader:
               label (1.0 or 0.0).
     """
 
-    def __init__(self, data_dir: str | Path) -> None:
+    def __init__(
+        self,
+        data_dir: str | Path,
+        max_impressions: int | None = None,
+    ) -> None:
         """Initialize the loader by reading news and behaviors files.
 
         Args:
             data_dir: Path to the directory containing news.tsv and
                 behaviors.tsv.
+            max_impressions: If set, only load the first N impression
+                rows from behaviors.tsv.  Useful for sampling from
+                large datasets without reading the entire file.
 
         Raises:
             FileNotFoundError: If the directory or required files do
@@ -86,7 +93,9 @@ class MINDDataLoader:
 
         self._news = self._load_news(news_path)
         self._article_features = self._build_article_features()
-        self._impressions = self._parse_behaviors(behaviors_path)
+        self._impressions = self._parse_behaviors(
+            behaviors_path, max_impressions
+        )
 
     @property
     def news(self) -> pd.DataFrame:
@@ -121,22 +130,34 @@ class MINDDataLoader:
         )
 
     def _build_article_features(self) -> dict[str, np.ndarray]:
-        """Build one-hot category feature vectors for each article.
+        """Build one-hot subcategory feature vectors for each article.
+
+        Uses the top-30 most frequent subcategories plus an "other"
+        bucket, giving a 31-dimensional feature vector per article.
+        Subcategories are far more granular than categories (285 vs
+        18 values), capturing distinctions like football_nfl vs
+        basketball_nba rather than just "sports".
 
         Returns:
             Dict mapping article_id to a numpy array of shape
-            (num_categories,) with a 1.0 at the category index.
+            (num_subcategories,) with a 1.0 at the subcategory index.
         """
-        self._categories = sorted(self._news["category"].unique())
-        self._cat_to_idx = {
-            cat: i for i, cat in enumerate(self._categories)
+        top_n = 30
+        subcat_counts = self._news["subcategory"].value_counts()
+        top_subcats = list(subcat_counts.head(top_n).index)
+        self._feature_labels = top_subcats + ["_other"]
+        self._subcat_to_idx = {
+            sc: i for i, sc in enumerate(top_subcats)
         }
-        d = len(self._categories)
+        self._other_idx = top_n
+        d = top_n + 1
 
         features: dict[str, np.ndarray] = {}
         for _, row in self._news.iterrows():
             vec = np.zeros(d)
-            vec[self._cat_to_idx[row["category"]]] = 1.0
+            subcat = row["subcategory"]
+            idx = self._subcat_to_idx.get(subcat, self._other_idx)
+            vec[idx] = 1.0
             features[row["article_id"]] = vec
         return features
 
@@ -145,7 +166,7 @@ class MINDDataLoader:
     ) -> np.ndarray:
         """Build a user profile vector from their click history.
 
-        Computes a normalised category-frequency vector over the
+        Computes a normalised subcategory-frequency vector over the
         articles the user has previously clicked.  If the history is
         empty or contains no known articles the result is a zero
         vector.
@@ -155,9 +176,9 @@ class MINDDataLoader:
                 clicked before this impression.
 
         Returns:
-            Array of shape (num_categories,) with values in [0, 1].
+            Array of shape (num_subcategories,) with values in [0, 1].
         """
-        d = len(self._categories)
+        d = len(self._feature_labels)
         profile = np.zeros(d)
 
         if not isinstance(click_history, str) or not click_history.strip():
@@ -172,7 +193,11 @@ class MINDDataLoader:
             profile /= total
         return profile
 
-    def _parse_behaviors(self, path: Path) -> list[dict[str, Any]]:
+    def _parse_behaviors(
+        self,
+        path: Path,
+        max_impressions: int | None = None,
+    ) -> list[dict[str, Any]]:
         """Parse behaviors.tsv into a list of impression round dicts.
 
         Each impression string like "N001-1 N002-0 N003-0" is split
@@ -180,6 +205,7 @@ class MINDDataLoader:
 
         Args:
             path: Path to the behaviors.tsv file.
+            max_impressions: If set, only read the first N rows.
 
         Returns:
             List of dicts with keys: user_id, candidates, rewards.
@@ -189,6 +215,7 @@ class MINDDataLoader:
             sep="\t",
             header=None,
             names=_BEHAVIORS_COLUMNS,
+            nrows=max_impressions,
         )
 
         rounds: list[dict[str, Any]] = []

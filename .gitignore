@@ -22,6 +22,7 @@ htmlcov/
 
 # Data (large output files)
 /data/output/
+/data/MINDlarge_train/
 
 # OS
 .DS_Store

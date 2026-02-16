@@ -1,8 +1,9 @@
 """Run a head-to-head comparison of bandit algorithms on MIND data.
 
-Runs RandomChoice, EpsilonGreedy, and ThompsonSampling against the
-MINDsmall_dev dataset, prints summary metrics to the console, saves
-results to CSV files, and generates comparative visualizations.
+Runs RandomChoice, EpsilonGreedy, ThompsonSampling, and LinUCB against
+the MINDlarge_train dataset (first 100K impressions), prints summary
+metrics to the console, saves results to CSV files, and generates
+comparative visualizations.
 """
 
 from pathlib import Path
@@ -18,14 +19,15 @@ from bandit.simulation.comparison import compare_algorithms
 
 
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent
-_DATA_DIR = _PROJECT_ROOT / "data" / "MINDsmall_dev"
+_DATA_DIR = _PROJECT_ROOT / "data" / "MINDlarge_train"
+_MAX_IMPRESSIONS = 100_000
 _OUTPUT_DIR = _PROJECT_ROOT / "results"
 
 
 def main() -> None:
     """Load data, run both algorithms, print and save results."""
     print(f"Loading MIND dataset from: {_DATA_DIR}")
-    loader = MINDDataLoader(_DATA_DIR)
+    loader = MINDDataLoader(_DATA_DIR, max_impressions=_MAX_IMPRESSIONS)
     print(f"Loaded {len(loader)} impression rounds.\n")
 
     algorithms = [
